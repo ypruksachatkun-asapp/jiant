@@ -12,6 +12,7 @@ import codecs
 import time
 
 from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
+from src.openai_transformer_lm import utils as openai_utils
 
 import numpy as np
 import torch
@@ -30,6 +31,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
 TOKENIZER = MosesTokenizer()
+TOKENIZER = openai_utils
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
 # Note: using the full 'detokenize()' method is not recommended, since it does

@@ -19,7 +19,7 @@ export JIANT_PROJECT_PREFIX=/scratch/tjf324/jiant
 export JIANT_DATA_DIR=/scratch/tjf324/data/glue_auto_dl
 export WORD_EMBS_FILE=/scratch/tjf324/data/fastext/crawl-200d-2M.vec
 export FASTTEXT_MODEL_FILE=.
-export JIANT_OVERRIDES="exp_name = main-multi-task-glue, train_tasks = glue, run_name = noelmo-do2-sd1, elmo_chars_only = 1, dropout = 0.2" 
-export JIANT_CONF="config/defaults.conf"
+export JIANT_OVERRIDES="exp_name = openai_full, run_name=1"
+export JIANT_CONF="config/train_openai.conf"
 
 
