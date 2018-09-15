@@ -15,17 +15,11 @@
 
 ##
 # Example of custom paths for a local installation:
-# export JIANT_PROJECT_PREFIX=/Users/Bowman/Drive/JSALT
-# export JIANT_DATA_DIR=/Users/Bowman/Drive/JSALT/jiant/glue_data
-# export JIANT_DATA_DIR=/home/raghu1991_p_gmail_com/
-# export WORD_EMBS_FILE=~/glove.840B.300d.txt
-# export FASTTEXT_MODEL_FILE=None
-# export FASTTEXT_EMBS_FILE=None
+export JIANT_PROJECT_PREFIX=/scratch/tjf324/jiant
+export JIANT_DATA_DIR=/scratch/tjf324/data/glue_auto_dl
+export WORD_EMBS_FILE=/scratch/tjf324/data/fastext/crawl-200d-2M.vec
+export FASTTEXT_MODEL_FILE=.
+export JIANT_OVERRIDES="exp_name = main-multi-task-glue, train_tasks = glue, run_name = noelmo-do2-sd1, elmo_chars_only = 1, dropout = 0.2" 
+export JIANT_CONF="config/defaults.conf"
 
-export JIANT_PROJECT_PREFIX=exp
-export JIANT_DATA_DIR=/nfs/jsalt/home/
-export NFS_PROJECT_PREFIX=/nfs/jsalt/exp/nkim
-export NFS_DATA_DIR=/nfs/jsalt/home/
-
-# echo "Loaded Sam's config."
 
