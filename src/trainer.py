@@ -21,6 +21,8 @@ from allennlp.data.iterators import BasicIterator, BucketIterator  # pylint: dis
 from allennlp.training.learning_rate_schedulers import LearningRateScheduler  # pylint: disable=import-error
 from allennlp.training.optimizers import Optimizer  # pylint: disable=import-error
 
+from .allennlp_mods.openai_opt import OpenAIAdam
+
 from .utils import device_mapping, assert_for_log # pylint: disable=import-error
 from .evaluate import evaluate
 from . import config
@@ -70,6 +72,10 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
         # AMSGrad is a flag variant of Adam, not its own object.
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
                              'weight_decay': 0, 'amsgrad': True})
+    elif params['optimizer'] == "openai_adam":
+        opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
+                             'schedule': 'warmup_linear', 'l2': 0.01,
+                             'warmup': 0.002, 'max_grad_norm': 1, 't_total': 25})
     else:
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
                              'weight_decay': 0})
@@ -266,6 +272,12 @@ class SamplingMultiTaskTrainer():
             task_info['loss'] = 0.0
             task_info['total_batches_trained'] = 0
             task_info['n_batches_since_val'] = 0
+            # We need to set t_total per task...
+            if optimizer_params['type'] == "openai_adam":
+                optimizer_params = Params({'type': "openai_adam", 'lr': optimizer_params['lr'],
+                                     'schedule': 'warmup_linear', 'l2': 0.0,
+                                     'warmup': 0.002, 't_total': task_info['n_tr_batches'] * 3})
+                print('@@@@' , task_info['n_tr_batches'])
             task_info['optimizer'] = Optimizer.from_params(train_params,
                                                            copy.deepcopy(optimizer_params))
             task_info['scheduler'] = LearningRateScheduler.from_params(
