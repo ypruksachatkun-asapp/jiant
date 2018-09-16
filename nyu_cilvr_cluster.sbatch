@@ -4,6 +4,7 @@
 
 #SBATCH --gres=gpu:1
 #SBATCH --mem=30000
+#SBATCH --time=24:00:00
 
 
 
