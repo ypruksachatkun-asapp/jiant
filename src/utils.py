@@ -30,7 +30,7 @@ from allennlp.common.params import Params
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 
-TOKENIZER = MosesTokenizer()
+# TOKENIZER = MosesTokenizer()
 TOKENIZER = openai_utils
 SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 
@@ -290,6 +290,39 @@ def load_diagnostic_tsv(
             'ix_to_logic_dic': ix_to_logic_dic,
             'ix_to_knowledge_dic': ix_to_knowledge_dic
             }
+
+def load_rocstories(data_file,
+                    max_seq_len):
+    def _rocstories(path):
+        """
+        Rocstories helper function
+        Taken from https://github.com/huggingface/pytorch-openai-transformer-lm/blob/master/datasets.py
+        And added documentation
+        Args:
+            path: path to the file
+
+        Returns:
+
+        """
+        with open(path, encoding='utf_8') as f:
+            f = csv.reader(f)
+            st = []
+            ct1 = []
+            ct2 = []
+            y = []
+            for i, line in enumerate(f):
+                # Skip header
+                if i > 0:
+                    # First 4 sentences are the story
+                    s = ' '.join(line[1:5])
+                    c1 = line[5]
+                    c2 = line[6]
+                    st.append(s)
+                    ct1.append(c1)
+                    ct2.append(c2)
+                    y.append(int(line[-1])-1)
+            return st, ct1, ct2, y
+    sentences, continuations1, continuations2, right_cont = _rocstories(data_file)
 
 
 
