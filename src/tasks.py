@@ -18,6 +18,7 @@ import numpy as np
 from typing import Iterable, Sequence, List, Dict, Any, Type
 import torch
 
+from sklearn.model_selection import train_test_split
 import allennlp.common.util as allennlp_util
 from allennlp.training.metrics import CategoricalAccuracy, \
         BooleanAccuracy, F1Measure, Average
@@ -33,7 +34,7 @@ from .allennlp_mods.multilabel_field import MultiLabelField
 
 from . import serialize
 from . import utils
-from .utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv
+from .utils import load_tsv, process_sentence, truncate, load_diagnostic_tsv, load_rocstories
 import codecs
 
 UNK_TOK_ALLENNLP = "@@UNKNOWN@@"
@@ -2458,3 +2459,46 @@ class CCGTaggingTask(TaggingTask):
         self.val_data_text = val_data
         self.test_data_text = te_data
         log.info("\tFinished loading CCGTagging data.")
+
+class MultipleChoiceOpenAITask(ClassificationTask):
+    '''
+    Multiple choice tasks as used in the case of OpenAI. Will handle concatenation inside the script
+    '''
+    def __init__(self, name, path, num_choices, max_seq_len):
+        super().__init__(name)
+        self.num_choices = num_choices
+        self.load_data(self, path, num_choices, max_seq_len)
+
+
+# @register_task('rocstories', rel_path='rocstories/')
+class RocStoriesTask(MultipleChoiceOpenAITask):
+    '''
+    '''
+    def __init__(self, path, max_seq_len, name="rocstories"):
+        super().__init__(name, path, max_seq_len, num_choices=2)
+
+    def load_data(self, path, max_seq_len):
+        '''
+        Process the RocStories data as per the huggingface implementation
+        Only works for OpenAi
+        '''
+        val_data_file = "cloze_test_val__spring2016 - cloze_test_ALL_val.csv"
+        test_data_file = "cloze_test_val__spring2016 - cloze_test_ALL_test.csv"
+        stories, conts1, conts2, right_conts = load_rocstories(os.path.join(path, val_data_file), max_seq_len)
+        # We need to do a train val split... The dataset has no standard one.
+        tr_stories, va_stories, \
+        tr_conts1, va_conts1, \
+        tr_conts2, va_conts2, \
+        tr_right_conts, va_right_conts = train_test_split(stories, conts1, comts2,
+                                                          right_conts, test_size=374, random_state=0)
+        te_stories, te_conts1, te_conts2, te_right_conts = load_rocstories(os.path.join(path, test_data_file),
+                                                                           max_seq_len)
+
+
+
+        # We need to do a train val split... The dataset has no standard one.
+        # For the same setup as hugging face:
+
+
+
+
