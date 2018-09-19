@@ -265,7 +265,10 @@ def main(cl_arguments):
             if task.name == 'mnli-diagnostic':
                 continue
             pred_module = getattr(model, "%s_mdl" % task.name)
-            to_train = elmo_scalars + [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+            if not args.openai_transformer_fine_tune:
+                to_train = elmo_scalars + [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
+            else:
+                to_train = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
             # Look for <task_name>_<param_name>, then eval_<param_name>
             params = build_trainer_params(args, task_names=[task.name, 'eval'])
             trainer, _, opt_params, schd_params = build_trainer(params, model,
