@@ -19,7 +19,7 @@ export JIANT_PROJECT_PREFIX=/scratch/tjf324/jiant
 export JIANT_DATA_DIR=/scratch/tjf324/data/glue_auto_dl
 export WORD_EMBS_FILE=/scratch/tjf324/data/fastext/crawl-200d-2M.vec
 export FASTTEXT_MODEL_FILE=.
-export JIANT_OVERRIDES="exp_name = openai_full, run_name=1"
+export JIANT_OVERRIDES=""
 export JIANT_CONF="config/train_openai.conf"
 
 
