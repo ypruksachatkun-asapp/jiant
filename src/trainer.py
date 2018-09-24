@@ -74,7 +74,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                              'weight_decay': 0, 'amsgrad': True})
     elif params['optimizer'] == "openai_adam":
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
-                             'schedule': 'warmup_linear', 'l2': 0.01,
+                             'schedule': 'warmup_linear', 'l2': 0.0,
                              'warmup': 0.002, 'max_grad_norm': 1, 't_total': 25})
     else:
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
@@ -274,10 +274,11 @@ class SamplingMultiTaskTrainer():
             task_info['n_batches_since_val'] = 0
             # We need to set t_total per task...
             if optimizer_params['type'] == "openai_adam":
+                log.info('@@@')
+                log.info(task_info)
                 optimizer_params = Params({'type': "openai_adam", 'lr': optimizer_params['lr'],
-                                     'schedule': 'warmup_linear', 'l2': 0.01,
+                                     'schedule': 'warmup_linear', 'l2': 0.00,
                                      'warmup': 0.002, 't_total': task_info['n_tr_batches'] * 3})
-                print('@@@@' , task_info['n_tr_batches'])
             task_info['optimizer'] = Optimizer.from_params(train_params,
                                                            copy.deepcopy(optimizer_params))
             task_info['scheduler'] = LearningRateScheduler.from_params(
@@ -296,7 +297,7 @@ class SamplingMultiTaskTrainer():
               batch_size, n_batches_per_pass,
               weighting_method, scaling_method,
               train_params, optimizer_params, scheduler_params,
-              shared_optimizer=1, load_model=1, phase="main"):
+              shared_optimizer=0, load_model=0, phase="main"):
         """
         The main training loop.
         Training will stop if we run out of patience or hit the minimum learning rate.
