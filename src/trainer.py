@@ -275,7 +275,7 @@ class SamplingMultiTaskTrainer():
             # We need to set t_total per task...
             if optimizer_params['type'] == "openai_adam":
                 optimizer_params = Params({'type': "openai_adam", 'lr': optimizer_params['lr'],
-                                     'schedule': 'warmup_linear', 'l2': 0.0,
+                                     'schedule': 'warmup_linear', 'l2': 0.01,
                                      'warmup': 0.002, 't_total': task_info['n_tr_batches'] * 3})
                 print('@@@@' , task_info['n_tr_batches'])
             task_info['optimizer'] = Optimizer.from_params(train_params,
