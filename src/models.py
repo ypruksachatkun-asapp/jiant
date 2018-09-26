@@ -5,6 +5,7 @@ import math
 import copy
 import json
 import logging as log
+from functools import partial
 
 import torch
 import torch.nn as nn
@@ -14,8 +15,6 @@ from torch.autograd import Variable
 from sklearn.metrics import mean_squared_error
 
 from allennlp.common import Params
-from allennlp.modules import Elmo, Seq2SeqEncoder, SimilarityFunction, TimeDistributed
-from allennlp.nn import util
 from allennlp.modules.token_embedders import Embedding, TokenCharactersEncoder
 from allennlp.modules.seq2vec_encoders import CnnEncoder
 from allennlp.modules.seq2seq_encoders import Seq2SeqEncoder as s2s_e
@@ -31,13 +30,13 @@ from .tasks import CCGTaggingTask, ClassificationTask, CoLATask, EdgeProbingTask
     GroundedTask, LanguageModelingTask, MTTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, RedditSeq2SeqTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
-    TaggingTask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask
+    TaggingTask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask, MultiNLITask, RTETask, QNLITask, WNLITask
 
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
     BiLMEncoder, ElmoCharacterEncoder, Classifier, Pooler, \
     SingleClassifier, PairClassifier, CNNEncoder, \
-    NullPhraseLayer
+    NullPhraseLayer, OpenAIEntailmentClassifier
 
 from .utils import assert_for_log, get_batch_utilization, get_batch_size
 from .preprocess import parse_task_list_arg, get_tasks
@@ -522,6 +521,7 @@ class MultiTaskModel(nn.Module):
         self.utilization = Average() if args.track_batch_utilization else None
         self.elmo = args.elmo and not args.elmo_chars_only
         self.sep_embs_for_skip = args.sep_embs_for_skip
+        self.openai = args.openai_transformer
 
 
     def forward(self, task, batch, predict=False):
@@ -543,6 +543,7 @@ class MultiTaskModel(nn.Module):
                 self.utilization(get_batch_utilization(batch['input1']))
             elif 'input' in batch:
                 self.utilization(get_batch_utilization(batch['input']))
+
         if isinstance(task, SingleClassificationTask):
             out = self._single_sentence_forward(batch, task, predict)
         elif isinstance(task, MultiNLIDiagnosticTask):

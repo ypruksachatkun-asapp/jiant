@@ -537,6 +537,7 @@ def add_openai_bpe_vocab(vocab, namespace='openai_bpe'):
     # OpenAI model expects special tokens.
     vocab.add_token_to_namespace(utils.SOS_TOK, namespace)
     vocab.add_token_to_namespace(utils.EOS_TOK, namespace)
+    vocab.add_token_to_namespace(utils.DEL_TOK, namespace)
 
 def get_embeddings(vocab, vec_file, d_word) -> torch.FloatTensor:
     '''Get embeddings for the words in vocab from a file of precomputed vectors.

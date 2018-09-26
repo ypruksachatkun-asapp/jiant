@@ -18,7 +18,6 @@ import numpy as np
 from typing import Iterable, Sequence, List, Dict, Any, Type
 import torch
 
-from sklearn.model_selection import train_test_split
 import allennlp.common.util as allennlp_util
 from allennlp.training.metrics import CategoricalAccuracy, \
         BooleanAccuracy, F1Measure, Average
@@ -227,6 +226,26 @@ class SingleClassificationTask(ClassificationTask):
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=False)
+
+class OAIEntailmentTask(SingleClassificationTask):
+    def __init__(self, name, n_classes, path):
+        super(OAIEntailmentTask, self).__init__(name, n_classes)
+
+    def transform_data(self):
+        def reshape_data(data):
+            sent1, sent2 = data[:2]
+            sent1 = [s1[:-1] + ["<DEL>"] + s2[1:] for s1, s2 in zip(sent1, sent2)] #FIXME: Make this work with other tokenizers
+            if len(data) == 3:
+                return sent1, [], data[2]
+            else:
+                return sent1, [], data[2], data[3]
+
+        self.train_data_text = reshape_data(self.train_data_text)
+        self.val_data_text = reshape_data(self.val_data_text)
+        self.test_data_text = reshape_data(self.test_data_text)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + self.test_data_text[0]
+        log.info("Finished reshaping data")
+
 
 
 class PairClassificationTask(ClassificationTask):
@@ -1341,6 +1360,9 @@ class MultiNLITask(PairClassificationTask):
         self.test_data_text = te_data
         log.info("\tFinished loading MNLI data.")
 
+
+
+
 @register_task('mnli-diagnostic', rel_path='MNLI/')
 class MultiNLIDiagnosticTask(PairClassificationTask):
     ''' Task class for diagnostic on MNLI'''
@@ -1624,7 +1646,6 @@ class RTETask(PairClassificationTask):
     ''' Task class for Recognizing Textual Entailment 1, 2, 3, 5 '''
 
     def __init__(self, path, max_seq_len, name="rte"):
-        ''' '''
         super(RTETask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
         self.sentences = self.train_data_text[0] + self.train_data_text[1] + \
@@ -2460,45 +2481,23 @@ class CCGTaggingTask(TaggingTask):
         self.test_data_text = te_data
         log.info("\tFinished loading CCGTagging data.")
 
-class MultipleChoiceOpenAITask(ClassificationTask):
+@register_task('mnli_recast', rel_path='MNLI/')
+class OAIMultiNLITask(OAIEntailmentTask):
     '''
-    Multiple choice tasks as used in the case of OpenAI. Will handle concatenation inside the script
+    Task class for MNLI recast in OpenAI style (only one sentence, concatenated)
     '''
-    def __init__(self, name, path, num_choices, max_seq_len):
-        super().__init__(name)
-        self.num_choices = num_choices
-        self.load_data(self, path, num_choices, max_seq_len)
+    load_data = MultiNLITask.load_data
 
+    def __init__(self, path, max_seq_len, name="mnli_recast"):
+        super(OAIMultiNLITask, self).__init__(name, 3, path)
+        self.load_data(path, max_seq_len)
+        self.transform_data()
 
-# @register_task('rocstories', rel_path='rocstories/')
-class RocStoriesTask(MultipleChoiceOpenAITask):
-    '''
-    '''
-    def __init__(self, path, max_seq_len, name="rocstories"):
-        super().__init__(name, path, max_seq_len, num_choices=2)
+@register_task('rte_recast', rel_path='RTE')
+class OAIRTETask(OAIEntailmentTask):
+    load_data = RTETask.load_data
 
-    def load_data(self, path, max_seq_len):
-        '''
-        Process the RocStories data as per the huggingface implementation
-        Only works for OpenAi
-        '''
-        val_data_file = "cloze_test_val__spring2016 - cloze_test_ALL_val.csv"
-        test_data_file = "cloze_test_val__spring2016 - cloze_test_ALL_test.csv"
-        stories, conts1, conts2, right_conts = load_rocstories(os.path.join(path, val_data_file), max_seq_len)
-        # We need to do a train val split... The dataset has no standard one.
-        tr_stories, va_stories, \
-        tr_conts1, va_conts1, \
-        tr_conts2, va_conts2, \
-        tr_right_conts, va_right_conts = train_test_split(stories, conts1, comts2,
-                                                          right_conts, test_size=374, random_state=0)
-        te_stories, te_conts1, te_conts2, te_right_conts = load_rocstories(os.path.join(path, test_data_file),
-                                                                           max_seq_len)
-
-
-
-        # We need to do a train val split... The dataset has no standard one.
-        # For the same setup as hugging face:
-
-
-
-
+    def __init__(self, path, max_seq_len, name='rte_recast'):
+        super(OAIRTETask, self).__init__(name, 2)
+        self.load_data(path, max_seq_len)
+        self.transform_data()

@@ -6,10 +6,8 @@ from typing import Dict, List, Sequence, Optional, Union, Iterable
 import copy
 import os
 import json
-import random
 import logging
 import codecs
-import time
 
 from nltk.tokenize.moses import MosesTokenizer, MosesDetokenizer
 from src.openai_transformer_lm import utils as openai_utils
@@ -32,7 +30,7 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 # TOKENIZER = MosesTokenizer()
 TOKENIZER = openai_utils
-SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
+SOS_TOK, EOS_TOK, DEL_TOK = "<SOS>", "<EOS>", "<DEL>"
 
 # Note: using the full 'detokenize()' method is not recommended, since it does
 # a poor job of adding correct whitespace. Use unescape_xml() only.

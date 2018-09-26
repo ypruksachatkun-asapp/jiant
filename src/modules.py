@@ -339,7 +339,6 @@ class PairClassifier(nn.Module):
         logits = self.classifier(pair_emb)
         return logits
 
-
 class AttnPairEncoder(Model):
     """
     Simplified version of BiDAF.
