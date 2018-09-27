@@ -2481,23 +2481,41 @@ class CCGTaggingTask(TaggingTask):
         self.test_data_text = te_data
         log.info("\tFinished loading CCGTagging data.")
 
-@register_task('mnli_recast', rel_path='MNLI/')
-class OAIMultiNLITask(OAIEntailmentTask):
-    '''
-    Task class for MNLI recast in OpenAI style (only one sentence, concatenated)
-    '''
+
+### Recast version of tasks
+
+@register_task('mnli_single_seq', rel_path='MNLI/')
+class SingleSequenceMultiNLITask(OAIEntailmentTask):
     load_data = MultiNLITask.load_data
 
-    def __init__(self, path, max_seq_len, name="mnli_recast"):
-        super(OAIMultiNLITask, self).__init__(name, 3, path)
+    def __init__(self, path, max_seq_len, name="mnli_single_seq"):
+        super(SingleSequenceMultiNLITask, self).__init__(name, 3)
         self.load_data(path, max_seq_len)
         self.transform_data()
 
-@register_task('rte_recast', rel_path='RTE')
-class OAIRTETask(OAIEntailmentTask):
+@register_task('rte_single_seq', rel_path='RTE/')
+class SingleSequenceRTETask(OAIEntailmentTask):
     load_data = RTETask.load_data
 
-    def __init__(self, path, max_seq_len, name='rte_recast'):
-        super(OAIRTETask, self).__init__(name, 2)
+    def __init__(self, path, max_seq_len, name='rte_single_seq'):
+        super(SingleSequenceRTETask, self).__init__(name, 2)
+        self.load_data(path, max_seq_len)
+        self.transform_data()
+
+@register_task('qnli_single_seq', rel_path='QNLI/')
+class SingleSequenceQNLITask(OAIEntailmentTask):
+    load_data = QNLITask.load_data
+
+    def __init__(self, path, max_seq_len, name='qnli_single_seq'):
+        super(OAIEntailmentTask, self).__init__(name, 2)
+        self.load_data(path, max_seq_len)
+        self.transform_data()
+
+@register_task('wnli_single_seq', rel_path='WNLI/')
+class SingleSequenceWNLITask(OAIEntailmentTask):
+    load_data = WNLITask.load_data
+
+    def __init__(self, path, max_seq_len, name='wnli_single_seq'):
+        super(OAIEntailmentTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
         self.transform_data()
