@@ -119,6 +119,14 @@ def process_single_pair_task_split(split, indexers, is_pair=True, classification
     #  return list(instances)
     return instances  # lazy iterator
 
+def reshape_two_sent_to_sim(data):
+    old_sent1, old_sent2 = data[:2]
+    sent1, sent2 = [s1[:-1] + ["<DEL>"] + s2[1:] for s1, s2 in zip(old_sent1, old_sent2)], \
+                   [s2[:-1] + ["<DEL>"] + s1[1:] for s1, s2 in zip(old_sent1, old_sent2)]
+    if len(data) == 3:
+        return sent1, sent2, data[2]
+    else:
+        return sent1, sent2, data[2], data[3]
 
 class Task():
     '''Generic class for a task
@@ -226,25 +234,6 @@ class SingleClassificationTask(ClassificationTask):
     def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
         ''' Process split text into a list of AllenNLP Instances. '''
         return process_single_pair_task_split(split, indexers, is_pair=False)
-
-class OAIEntailmentTask(SingleClassificationTask):
-    def __init__(self, name, n_classes, path):
-        super(OAIEntailmentTask, self).__init__(name, n_classes)
-
-    def transform_data(self):
-        def reshape_data(data):
-            sent1, sent2 = data[:2]
-            sent1 = [s1[:-1] + ["<DEL>"] + s2[1:] for s1, s2 in zip(sent1, sent2)] #FIXME: Make this work with other tokenizers
-            if len(data) == 3:
-                return sent1, [], data[2]
-            else:
-                return sent1, [], data[2], data[3]
-
-        self.train_data_text = reshape_data(self.train_data_text)
-        self.val_data_text = reshape_data(self.val_data_text)
-        self.test_data_text = reshape_data(self.test_data_text)
-        self.sentences = self.train_data_text[0] + self.val_data_text[0] + self.test_data_text[0]
-        log.info("Finished reshaping data")
 
 
 
@@ -2484,6 +2473,52 @@ class CCGTaggingTask(TaggingTask):
 
 ### Recast version of tasks
 
+class OAIEntailmentTask(SingleClassificationTask):
+    def __init__(self, name, n_classes, path):
+        super(OAIEntailmentTask, self).__init__(name, n_classes)
+
+    def transform_data(self):
+        def reshape_data(data):
+            sent1, sent2 = data[:2]
+            sent1 = [s1[:-1] + ["<DEL>"] + s2[1:] for s1, s2 in zip(sent1, sent2)] #FIXME: Make this work with other tokenizers
+            if len(data) == 3:
+                return sent1, [], data[2]
+            else:
+                return sent1, [], data[2], data[3]
+
+        self.train_data_text = reshape_data(self.train_data_text)
+        self.val_data_text = reshape_data(self.val_data_text)
+        self.test_data_text = reshape_data(self.test_data_text)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + self.test_data_text[0]
+        log.info(max(len(i) for i in self.sentences))
+        log.info("Finished reshaping data")
+
+class OAISimilarityTask(PairClassificationTask):
+    def __init__(self, name, n_classes, path):
+        super(OAISimilarityTask, self).__init__(name, n_classes)
+
+    def transform_data(self):
+        reshape_data = reshape_two_sent_to_sim
+        self.train_data_text = reshape_data(self.train_data_text)
+        self.val_data_text = reshape_data(self.val_data_text)
+        self.test_data_text = reshape_data(self.test_data_text)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + self.test_data_text[0] + \
+                         self.train_data_text[1] + self.val_data_text[1] + self.test_data_text[1]
+        log.info("Finished reshaping data")
+
+class OAISimilarityRegressionTask(PairRegressionTask):
+    def __init__(self, name, path):
+        super(OAISimilarityRegressionTask, self).__init__(name)
+
+    def transform_data(self):
+        reshape_data = reshape_two_sent_to_sim
+        self.train_data_text = reshape_data(self.train_data_text)
+        self.val_data_text = reshape_data(self.val_data_text)
+        self.test_data_text = reshape_data(self.test_data_text)
+        self.sentences = self.train_data_text[0] + self.val_data_text[0] + self.test_data_text[0] + \
+                         self.train_data_text[1] + self.val_data_text[1] + self.test_data_text[1]
+        log.info("Finished reshaping data")
+
 @register_task('mnli_single_seq', rel_path='MNLI/')
 class SingleSequenceMultiNLITask(OAIEntailmentTask):
     load_data = MultiNLITask.load_data
@@ -2517,5 +2552,32 @@ class SingleSequenceWNLITask(OAIEntailmentTask):
 
     def __init__(self, path, max_seq_len, name='wnli_single_seq'):
         super(OAIEntailmentTask, self).__init__(name, 2)
+        self.load_data(path, max_seq_len)
+        self.transform_data()
+
+@register_task('mrpc_double_sim', rel_path='MRPC/')
+class DoubleSimMRPCTask(OAISimilarityTask):
+    load_data = MRPCTask.load_data
+
+    def __init__(self, path, max_seq_len, name='mrpc_double_sim'):
+        super(OAISimilarityTask, self).__init__(name, 2)
+        self.load_data(path, max_seq_len)
+        self.transform_data()
+
+@register_task('qqp_double_sim', rel_path='QQP/')
+class DoubleSimQQPTask(OAISimilarityTask):
+    load_data = QQPTask.load_data
+
+    def __init__(self, path, max_seq_len, name='qqp_double_sim'):
+        super(OAISimilarityTask, self).__init__(name, 2)
+        self.load_data(path, max_seq_len)
+        self.transform_data()
+
+@register_task('stsb_double_sim', rel_path='STSB//')
+class DoubleSimSTSBTask(OAISimilarityTask):
+    load_data = STSBTask.load_data
+
+    def __init__(self, path, max_seq_len, name='stsb_double_sim'):
+        super(OAISimilarityTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
         self.transform_data()
