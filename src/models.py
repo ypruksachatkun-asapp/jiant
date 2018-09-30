@@ -472,7 +472,7 @@ def build_pair_sentence_module(task, d_inp, model, vocab, params):
         pooler = Pooler.from_params(params["d_hid_attn"], params["d_hid_attn"], project=False)
         d_out = params["d_hid_attn"] * 2
     else:
-        pooler = Pooler.from_params(d_inp, params["d_proj"], project=True)
+        pooler = Pooler.from_params(d_inp, params["d_proj"], project=not params["openai"])
         d_out = params["d_proj"]
 
     if params["shared_pair_attn"]:
@@ -485,8 +485,11 @@ def build_pair_sentence_module(task, d_inp, model, vocab, params):
         pair_attn = build_pair_attn(d_inp, params["attn"], params["d_hid_attn"])
 
     n_classes = task.n_classes if hasattr(task, 'n_classes') else 1
-    classifier = Classifier.from_params(4 * d_out, n_classes, params)
-    module = PairClassifier(pooler, classifier, pair_attn)
+    if params["openai"]:
+        classifier = Classifier.from_params(d_out, n_classes, params)
+    else:
+        classifier = Classifier.from_params(4 * d_out, n_classes, params)
+    module = PairClassifier(pooler, classifier, pair_attn, params["openai"])
     return module
 
 def build_lm(task, d_inp, args):

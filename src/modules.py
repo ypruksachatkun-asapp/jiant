@@ -322,11 +322,20 @@ class SingleClassifier(nn.Module):
 class PairClassifier(nn.Module):
     ''' Thin wrapper around a set of modules. For sentence pair classification. '''
 
-    def __init__(self, pooler, classifier, attn=None):
+    def __init__(self, pooler, classifier, attn=None, add_sent=False):
+        """
+        A simple pair classifier module
+        Args:
+            pooler:
+            classifier:
+            attn:
+            add_sent: whether to add the two sentences after pooling like in OpenAI similarity
+        """
         super(PairClassifier, self).__init__()
         self.pooler = pooler
         self.classifier = classifier
         self.attn = attn
+        self.add_sent = add_sent
 
     def forward(self, s1, s2, mask1, mask2):
         mask1 = mask1.squeeze(-1) if len(mask1.size()) > 2 else mask1
@@ -335,7 +344,10 @@ class PairClassifier(nn.Module):
             s1, s2 = self.attn(s1, s2, mask1, mask2)
         emb1 = self.pooler(s1, mask1)
         emb2 = self.pooler(s2, mask2)
-        pair_emb = torch.cat([emb1, emb2, torch.abs(emb1 - emb2), emb1 * emb2], 1)
+        if self.add_sent:
+            pair_emb = emb1 + emb2
+        else:
+            pair_emb = torch.cat([emb1, emb2, torch.abs(emb1 - emb2), emb1 * emb2], 1)
         logits = self.classifier(pair_emb)
         return logits
 
