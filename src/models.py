@@ -332,6 +332,8 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
 def build_module(task, model, d_sent, d_emb, vocab, embedder, args):
     ''' Build task-specific components for a task and add them to model. '''
     task_params = model._get_task_params(task.name)
+    # Add info about transformer for module building
+    task_params["openai"] = args.openai_transformer
     if isinstance(task, SingleClassificationTask):
         module = build_single_sentence_module(task, d_sent, task_params)
         setattr(model, '%s_mdl' % task.name, module)
@@ -446,7 +448,7 @@ def build_image_sent_module(task, d_inp, params):
 
 def build_single_sentence_module(task, d_inp, params):
     ''' Build a single classifier '''
-    pooler = Pooler.from_params(d_inp, params['d_proj'])
+    pooler = Pooler.from_params(d_inp, params['d_proj'], project=not params["openai"])
     classifier = Classifier.from_params(params['d_proj'], task.n_classes, params)
     return SingleClassifier(pooler, classifier)
 
