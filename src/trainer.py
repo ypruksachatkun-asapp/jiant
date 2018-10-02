@@ -256,7 +256,7 @@ class SamplingMultiTaskTrainer():
             iterator = BucketIterator(sorting_keys=sorting_keys,
                                       max_instances_in_memory=10000,
                                       batch_size=batch_size,
-                                      biggest_batch_first=True)
+                                      biggest_batch_first=False)
             tr_generator = iterator(task.train_data, num_epochs=None, cuda_device=self._cuda_device)
 
             task_info['iterator'] = iterator
@@ -274,8 +274,6 @@ class SamplingMultiTaskTrainer():
             task_info['n_batches_since_val'] = 0
             # We need to set t_total per task...
             if optimizer_params['type'] == "openai_adam":
-                log.info('@@@')
-                log.info(task_info)
                 optimizer_params = Params({'type': "openai_adam", 'lr': optimizer_params['lr'],
                                      'schedule': 'warmup_linear', 'l2': 0.00,
                                      'warmup': 0.002, 't_total': task_info['n_tr_batches'] * 3})
@@ -430,7 +428,6 @@ class SamplingMultiTaskTrainer():
 
         log.info("Beginning training. Stopping metric: %s", stop_metric)
         all_tr_metrics = {}
-        log.info("Beginning training. Stopping metric: %s", stop_metric)
         while not should_stop:
             self._model.train()
             task = samples[n_pass % (validation_interval)] # randomly select a task
@@ -545,7 +542,7 @@ class SamplingMultiTaskTrainer():
                         log.info("\t" + ", ".join(["{}: {:.6f}".format(layer, float(param))
                                                    for layer, param in task_params.items()]))
 
-                # Reset training preogress
+                # Reset training progress
                 all_tr_metrics = {}
                 samples = random.choices(
                     tasks,

@@ -277,10 +277,14 @@ class Classifier(nn.Module):
     ''' Logistic regression or MLP classifier '''
     # NOTE: Expects dropout to have already been applied to its input.
 
-    def __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512):
+    def __init__(self, d_inp, n_classes, cls_type='mlp', dropout=.2, d_hid=512,
+                 openai_initialization=False):
         super(Classifier, self).__init__()
         if cls_type == 'log_reg':
             classifier = nn.Linear(d_inp, n_classes)
+            if openai_initialization:
+                nn.init.normal_(self.classifier.weight, std=0.02)
+                nn.init.normal_(self.classifier.bias, 0)
         elif cls_type == 'mlp':
             classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid),
@@ -302,7 +306,8 @@ class Classifier(nn.Module):
     @classmethod
     def from_params(cls, d_inp, n_classes, params):
         return cls(d_inp, n_classes, cls_type=params["cls_type"],
-                   dropout=params["dropout"], d_hid=params["d_hid"])
+                   dropout=params["dropout"], d_hid=params["d_hid"],
+                   openai_initialization=params["openai"])
 
 
 class SingleClassifier(nn.Module):
