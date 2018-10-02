@@ -79,7 +79,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
                              'warmup': 0.002, 'max_grad_norm': 1, 't_total': 25})
     else:
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
-                             'weight_decay': 0})
+                             'weight_decay': 0.01*params["openai"]})
 
     if 'transformer' in params['sent_enc']:
         assert False, "Transformer is not yet tested, still in experimental stage :-("
