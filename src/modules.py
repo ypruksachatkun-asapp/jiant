@@ -283,8 +283,8 @@ class Classifier(nn.Module):
         if cls_type == 'log_reg':
             classifier = nn.Linear(d_inp, n_classes)
             if openai_initialization:
-                nn.init.normal_(self.classifier.weight, std=0.02)
-                nn.init.normal_(self.classifier.bias, 0)
+                nn.init.normal_(classifier.weight, std=0.02)
+                nn.init.normal_(classifier.bias, 0)
         elif cls_type == 'mlp':
             classifier = nn.Sequential(nn.Linear(d_inp, d_hid),
                                        nn.Tanh(), nn.LayerNorm(d_hid),
