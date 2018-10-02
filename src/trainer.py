@@ -49,6 +49,7 @@ def build_trainer_params(args, task_names):
     params['max_vals'] = _get_task_attr('max_vals')
     params['val_interval'] = _get_task_attr('val_interval')
     params['dec_val_scale'] = _get_task_attr('dec_val_scale')
+    params['openai'] = getattr(args, "openai_transformer")
 
     return Params(params)
 
@@ -71,7 +72,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
     if params['optimizer'] == 'adam':
         # AMSGrad is a flag variant of Adam, not its own object.
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
-                             'weight_decay': 0, 'amsgrad': True})
+                             'weight_decay': 0.01*params["openai"], 'amsgrad': not params["openai"]})
     elif params['optimizer'] == "openai_adam":
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
                              'schedule': 'warmup_linear', 'l2': 0.0,
