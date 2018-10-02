@@ -29,7 +29,7 @@ SCHEDULES = {
 
 # This is similar to below but does not have scheduler related stuff...
 @Optimizer.register("adamw")
-class AdamW(Optimizer):
+class AdamW(PytorchOptimizer):
     """
        Implements Adam algorithm with weight decay fix in PyTorch
        Paper: Fixing Weight Decay Regularization in Adam by Ilya Loshchilov, Frank Hutter

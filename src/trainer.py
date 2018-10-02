@@ -77,9 +77,12 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
                              'schedule': 'warmup_linear', 'l2': 0.0,
                              'warmup': 0.002, 'max_grad_norm': 1, 't_total': 25})
+    elif params['optimizer'] == 'adamw':
+        opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
+                             'l2': 0.01})
     else:
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
-                             'weight_decay': 0.01*params["openai"]})
+                             'weight_decay': 0})
 
     if 'transformer' in params['sent_enc']:
         assert False, "Transformer is not yet tested, still in experimental stage :-("
