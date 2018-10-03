@@ -72,7 +72,7 @@ def build_trainer(params, model, run_dir, metric_should_decrease=True):
     if params['optimizer'] == 'adam':
         # AMSGrad is a flag variant of Adam, not its own object.
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
-                             'weight_decay': 0.01*params["openai"], 'amsgrad': not params["openai"]})
+                             'weight_decay': 0.00, 'amsgrad': True})
     elif params['optimizer'] == "openai_adam":
         opt_params = Params({'type': params['optimizer'], 'lr': params['lr'],
                              'schedule': 'warmup_linear', 'l2': 0.0,
