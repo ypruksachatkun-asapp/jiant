@@ -77,7 +77,8 @@ class OpenAIEmbedderModule(nn.Module):
 
         full_emb_vocab = N_VOCAB + self.n_special + self.n_ctx
         self.model = model_pytorch.TransformerModel(self.model_cfg,
-                                                    vocab=full_emb_vocab)
+                                                    vocab=full_emb_vocab,
+                                                    n_ctx=self.n_ctx)
 
         # Need specific seed to reproduce results.
         seed = 42
@@ -88,6 +89,7 @@ class OpenAIEmbedderModule(nn.Module):
         loader_args = dict(n_special=n_special)
         # Path to model weights
         loader_args['path'] = openai_data_dir + "/"
+        loader_args['n_ctx'] = self.n_ctx
         # Path to variable name mapping
         loader_args['path_names'] = os.path.dirname(model_pytorch.__file__) + "/"
         # Load pretrained weights from disk

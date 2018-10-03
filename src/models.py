@@ -60,7 +60,7 @@ def build_model(args, vocab, pretrained_embs, tasks):
         from .openai_transformer_lm.utils import OpenAIEmbedderModule
         log.info("Using OpenAI transformer model; skipping other embedders.")
         cove_layer = None
-        embedder = OpenAIEmbedderModule(args)
+        embedder = OpenAIEmbedderModule(args, n_ctx=args["max_seq_len"])
         d_emb = embedder.get_output_dim()
     else:
         d_emb, embedder, cove_layer = build_embeddings(args, vocab,
