@@ -2581,7 +2581,7 @@ class DoubleSimQQPTask(OAISimilarityTask):
         self.load_data(path, max_seq_len)
         self.transform_data(48, 48)
 
-@register_task('stsb_double_sim', rel_path='STSB/')
+@register_task('stsb_double_sim', rel_path='STS-B/')
 class DoubleSimSTSBTask(OAISimilarityTask):
     load_data = STSBTask.load_data
 
