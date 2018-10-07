@@ -30,7 +30,8 @@ from .tasks import CCGTaggingTask, ClassificationTask, CoLATask, EdgeProbingTask
     GroundedTask, LanguageModelingTask, MTTask, MultiNLIDiagnosticTask, PairClassificationTask, \
     PairOrdinalRegressionTask, PairRegressionTask, RankingTask, RedditSeq2SeqTask, \
     RegressionTask, SequenceGenerationTask, SingleClassificationTask, SSTTask, STSBTask, \
-    TaggingTask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask, MultiNLITask, RTETask, QNLITask, WNLITask
+    TaggingTask, WeakGroundedTask, Wiki103Seq2SeqTask, JOCITask, MultiNLITask, RTETask, QNLITask, WNLITask, \
+    DoubleSimSTSBTask
 
 from .modules import SentenceEncoder, BoWSentEncoder, \
     AttnPairEncoder, MaskedStackedSelfAttentionEncoder, \
@@ -723,7 +724,7 @@ class MultiTaskModel(nn.Module):
                 labels_np = labels.data.cpu().numpy()
                 task.scorer1(mean_squared_error(logits_np, labels_np))
                 task.scorer2(logits_np, labels_np)
-            elif isinstance(task, STSBTask):
+            elif isinstance(task, (STSBTask, DoubleSimSTSBTask)):
                 logits = logits.squeeze(-1) if len(logits.size()) > 1 else logits
                 out['loss'] = F.mse_loss(logits, labels)
                 logits_np = logits.data.cpu().numpy()

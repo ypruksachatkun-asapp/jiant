@@ -2566,26 +2566,40 @@ class SingleSequenceWNLITask(OAIEntailmentTask):
 @register_task('mrpc_double_sim', rel_path='MRPC/')
 class DoubleSimMRPCTask(OAISimilarityTask):
     load_data = MRPCTask.load_data
+    get_metrics = MRPCTask.get_metrics
 
     def __init__(self, path, max_seq_len, name='mrpc_double_sim'):
         super(OAISimilarityTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
         self.transform_data(60, 60)
+        self.scorer2 = F1Measure(1)
+        self.val_metric = "%s_acc_f1" % name
+        self.val_metric_decreases = False
 
 @register_task('qqp_double_sim', rel_path='QQP/')
 class DoubleSimQQPTask(OAISimilarityTask):
     load_data = QQPTask.load_data
+    get_metrics = QQPTask.get_metrics
 
     def __init__(self, path, max_seq_len, name='qqp_double_sim'):
         super(OAISimilarityTask, self).__init__(name, 2)
         self.load_data(path, max_seq_len)
         self.transform_data(48, 48)
+        self.scorer2 = F1Measure(1)
+        self.val_metric = "%s_acc_f1" % name
+        self.val_metric_decreases = False
 
 @register_task('stsb_double_sim', rel_path='STS-B/')
-class DoubleSimSTSBTask(OAISimilarityTask):
+class DoubleSimSTSBTask(OAISimilarityRegressionTask):
     load_data = STSBTask.load_data
+    get_metrics = STSBTask.get_metrics
 
     def __init__(self, path, max_seq_len, name='stsb_double_sim'):
-        super(OAISimilarityTask, self).__init__(name, 2)
+        super(OAISimilarityRegressionTask, self).__init__(name)
         self.load_data(path, max_seq_len)
         self.transform_data(75, 75)
+        self.scorer1 = Correlation("pearson")
+        self.scorer2 = Correlation("spearman")
+        self.val_metric = "%s_corr" % self.name
+        self.val_metric_decreases = False
+
