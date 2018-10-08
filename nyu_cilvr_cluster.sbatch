@@ -2,7 +2,7 @@
 
 # Generic job script for all experiments on NYU CILVR machines.
 
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:p40:1
 #SBATCH --mem=30000
 #SBATCH --time=24:00:00
 
