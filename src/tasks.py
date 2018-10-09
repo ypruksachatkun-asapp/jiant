@@ -2566,7 +2566,6 @@ class SingleSequenceWNLITask(OAIEntailmentTask):
 @register_task('mrpc_double_sim', rel_path='MRPC/')
 class DoubleSimMRPCTask(OAISimilarityTask):
     load_data = MRPCTask.load_data
-    get_metrics = MRPCTask.get_metrics
 
     def __init__(self, path, max_seq_len, name='mrpc_double_sim'):
         super(OAISimilarityTask, self).__init__(name, 2)
@@ -2576,10 +2575,16 @@ class DoubleSimMRPCTask(OAISimilarityTask):
         self.val_metric = "%s_acc_f1" % name
         self.val_metric_decreases = False
 
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        pcs, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1,
+                'precision': pcs, 'recall': rcl}
+
 @register_task('qqp_double_sim', rel_path='QQP/')
 class DoubleSimQQPTask(OAISimilarityTask):
     load_data = QQPTask.load_data
-    get_metrics = QQPTask.get_metrics
 
     def __init__(self, path, max_seq_len, name='qqp_double_sim'):
         super(OAISimilarityTask, self).__init__(name, 2)
@@ -2588,6 +2593,13 @@ class DoubleSimQQPTask(OAISimilarityTask):
         self.scorer2 = F1Measure(1)
         self.val_metric = "%s_acc_f1" % name
         self.val_metric_decreases = False
+
+    def get_metrics(self, reset=False):
+        '''Get metrics specific to the task'''
+        acc = self.scorer1.get_metric(reset)
+        pcs, rcl, f1 = self.scorer2.get_metric(reset)
+        return {'acc_f1': (acc + f1) / 2, 'accuracy': acc, 'f1': f1,
+                'precision': pcs, 'recall': rcl}
 
 @register_task('stsb_double_sim', rel_path='STS-B/')
 class DoubleSimSTSBTask(OAISimilarityRegressionTask):
