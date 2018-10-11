@@ -98,8 +98,15 @@ class OpenAIEmbedderModule(nn.Module):
         log.info("Loaded OpenAI transformer model.")
 
         # Set trainability of this module.
-        for param in self.model.parameters():
-            param.requires_grad = bool(args.openai_transformer_fine_tune)
+        min_layer_to_finetune = args.openai_transformer_fine_tune_min_layer
+        for name, param in self.model.named_parameters():
+            # Check whether we are on the first layer:
+            if name == "embed.weight":
+                param.requires_grad = bool(args.openai_transformer_fine_tune) and (min_layer_to_finetune < 1)
+            else:
+                param.requires_grad = bool(args.openai_transformer_fine_tune) and int(name.split('.')[1])\
+                                      >= min_layer_to_finetune
+
 
     def forward(self, sent: Dict[str, torch.LongTensor],
                 unused_task_name: str="") -> torch.FloatTensor:
