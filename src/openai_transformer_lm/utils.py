@@ -76,9 +76,15 @@ class OpenAIEmbedderModule(nn.Module):
         self.n_ctx = n_ctx  # max context width (seq len)
 
         full_emb_vocab = N_VOCAB + self.n_special + self.n_ctx
-        self.model = model_pytorch.TransformerModel(self.model_cfg,
-                                                    vocab=full_emb_vocab,
-                                                    n_ctx=self.n_ctx)
+
+        if args.weighted_openai_transformer:
+            transformer_model = model_pytorch.WeightedTransformerModel
+        else:
+            transformer_model = model_pytorch.TransformerModel
+
+        self.model = transformer_model(self.model_cfg,
+                                       vocab=full_emb_vocab,
+                                       n_ctx=self.n_ctx)
 
         # Need specific seed to reproduce results.
         seed = 42
@@ -98,8 +104,13 @@ class OpenAIEmbedderModule(nn.Module):
         log.info("Loaded OpenAI transformer model.")
 
         # Set trainability of this module.
-        for param in self.model.parameters():
-            param.requires_grad = bool(args.openai_transformer_fine_tune)
+        if args.weighted_openai_transformer:
+            for param in self.model.parameters():
+                param.requires_grad = not bool(args.weighted_openai_transformer_only_fine_tune_weights)
+            self.model.level_weights.requires_grad = True
+        else:
+            for param in self.model.parameters():
+                param.requires_grad = bool(args.openai_transformer_fine_tune)
 
     def forward(self, sent: Dict[str, torch.LongTensor],
                 unused_task_name: str="") -> torch.FloatTensor:
