@@ -132,6 +132,121 @@ class LanguageModelingTask(SequenceGenerationTask):
             for sent in self.get_data_iter(path):
                 yield sent
 
+
+@register_task("ehr-lm", rel_path="ehr-lm")
+class EHRSectionPredictionTask(LanguageModelingTask):
+    def __init__(self, path, max_seq_len, name, **kw):
+        super(EHRSectionPredictionTask, self).__init__( path, max_seq_len, name, **kw)
+        self.path = path
+        self.max_seq_len = max_seq_len
+        self._label_namespace = "section_tags"
+        self.train_data_text = None
+        self.val_data_text = None
+        self.test_data_text = None
+        self.files_by_split = {
+            "train": os.path.join(path, "section_train.tsv"),
+            "val": os.path.join(path, "section_val.tsv"),
+            "test": os.path.join(path, "section_test.tsv"),
+        }
+
+    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+        """Process a language modeling split by indexing and creating fields.
+        Args:
+            split: (list) a single list of sentences
+            indexers: (Indexer object) indexer to index input words
+        """
+
+        def _make_instance(sent_):
+            """ Forward targs adds <s> as a target for input </s>
+            and bwd targs adds </s> as a target for input <s>
+            to avoid issues with needing to strip extra tokens
+            in the input for each direction """
+            d = {
+                "input": sentence_to_text_field(sent_[:-1], indexers),
+                "input_str": MetadataField(sent_[:-1]),
+                "section_name_str": MetadataField(sent_[-1]),
+                "targs": sentence_to_text_field(sent_[1:-2], self.target_indexer),
+                "section_name": sentence_to_text_field(sent_[-1].split(), self.target_indexer)
+            }
+            return Instance(d)
+
+        for sent in split:
+            yield _make_instance(sent)
+            
+    def load_data(self):
+        """ Load data """
+
+        self.train_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "section_train.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=1,
+            s2_idx=None,
+            quote_level=2,
+            label_idx=5,
+            skip_rows=1,
+        )
+        self.val_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "section_val.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=1,
+            s2_idx=None,
+            quote_level=2,
+            label_idx=5,
+            skip_rows=1,
+        )
+        self.test_data_text = load_tsv(
+            self._tokenizer_name,
+            os.path.join(self.path, "section_test.tsv"),
+            max_seq_len=self.max_seq_len,
+            s1_idx=1,
+            s2_idx=None,
+            has_labels=True, # the labels is the section mapping
+            quote_level=2,
+            return_indices=True,
+            label_idx=5,
+            skip_rows=1,
+        )
+        self.train_data_text = [self.train_data_text[0], self.train_data_text[2]]
+        self.val_data_text = [self.train_data_text[0], self.val_data_text[2]]
+        self.test_data_text = [self.train_data_text[0], self.test_data_text[2]]
+        self.sentences = self.train_data_text[0] + self.val_data_text[0]
+        for split in ["train", "val", "test"]:
+            dataset = getattr(self, "%s_data_text" % split)
+            dataset = [x + [y] for x,y in zip(dataset[0], dataset[1])]
+            setattr(self, "%s_data_text" % split, dataset)
+        log.info("\tFinished loading EHR data.")
+
+    def get_all_labels(self):
+        return [x.lower() for x in ["FINAL DIAGNOSES", "CHIEF COMPLAINT", \
+                "DISCHARGE MEDICATIONS", "FOLLOW-UP PLANS", \
+                "DISCHARGE STATUS", "DISCHARGE INSTRUCTIONS", \
+                "Followup Instructions", "DISCHARGE CONDITIO", \
+                "BRIEF SUMMARY OF HOSPITAL COURSE", "LABORATORY STUDIES", \
+                 "PHYSICAL EXAM AT TIME OF ADMISSION", "SOCIAL HISTORY", \
+                 "FAMILY HISTORY", "ALLERGIES", "MEDICATIONS ON ADMISSION", \
+                 "PAST MEDICAL HISTORY", "HISTORY OF PRESENT ILLNESS"]]
+
+    def get_split_text(self, split: str):
+        """ Get split text, typically as list of columns.
+
+        Split should be one of 'train', 'val', or 'test'.
+        """
+        return getattr(self, "%s_data_text" % split)
+
+    def get_sentences(self) -> Iterable[Sequence[str]]:
+            """ Yield sentences, used to compute vocabulary. """
+            for split in self.files_by_split:
+                if split.startswith("test"):
+                    continue
+                dataset = getattr(self, "%s_data_text" % split)
+
+                for record in dataset:
+                    yield record
+
+
+
 @register_task("ehr-lm", rel_path="ehr-lm")
 class EHRSectionPredictionTask(LanguageModelingTask):
     def __init__(self, path, max_seq_len, name, **kw):

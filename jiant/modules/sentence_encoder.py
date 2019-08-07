@@ -72,6 +72,8 @@ class SentenceEncoder(Model):
 
         initializer(self)
 
+    def return_phrase_layer(self):
+        return self._phrase_layer
     def forward(self, sent, task, reset=True, to_append=None, append_to_input=False):
         # pylint: disable=arguments-differ
         """
