@@ -31,7 +31,6 @@ from jiant.CRFTagger import CrfTagger
 from jiant.preprocess import build_tasks
 from jiant import tasks as task_modules
 from jiant.trainer import build_trainer
-<<<<<<< HEAD
 from jiant.utils import config
 from jiant.models import build_embeddings
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
@@ -50,9 +49,6 @@ from allennlp.data.tokenizers import Token
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.models import Model
 from allennlp.modules.feedforward import FeedForward
-=======
-from jiant.utils import config, tokenizers
->>>>>>> be279c1222cf6f9cab5bd3b4743f3a93cd8731a0
 from jiant.utils.utils import (
     assert_for_log,
     load_model_state,
@@ -61,7 +57,6 @@ from jiant.utils.utils import (
     sort_param_recursive,
     select_relevant_print_args,
     check_for_previous_checkpoints,
-    select_pool_type,
     delete_all_checkpoints,
 )
 
@@ -255,13 +250,9 @@ def check_configurations(args, pretrain_tasks, target_tasks):
                     args.load_model
                     or args.load_target_train_checkpoint not in ["none", ""]
                     or args.allow_untrained_encoder_parameters
-                ), "Evaluating a model without training it on this run or loading a checkpoint. "
-                "Set `allow_untrained_encoder_parameters` if you really want to use an untrained "
-                "task model."
+                ), "Evaluating a model without training it on this run or loading a checkpoint.  Set `allow_untrained_encoder_parameters` if you really want to use an untrained task model."
                 log.warning(
-                    "Evauluating a target task model without training it in this run. It's up to "
-                    "you to ensure that you are loading parameters that were sufficiently trained "
-                    "for this task."
+                    "Evauluating a target task model without training it in this run. It's up to you to ensure that you are loading parameters that were sufficiently trained for this task."
                 )
         steps_log.write("Evaluating model on tasks: %s \n" % args.target_tasks)
 
@@ -435,11 +426,6 @@ def initial_setup(args, cl_args):
             )
             args.cuda = -1
 
-    if args.tokenizer == "auto":
-        args.tokenizer = tokenizers.select_tokenizer(args)
-    if args.pool_type == "auto":
-        args.pool_type = select_pool_type(args)
-
     return args, seed
 
 
@@ -461,14 +447,13 @@ def check_arg_name(args):
     for task in task_modules.ALL_GLUE_TASKS + task_modules.ALL_SUPERGLUE_TASKS:
         assert_for_log(
             not args.regex_contains("^{}_".format(task)),
-            "Error: Attempting to load old task-specific args for task %s, please refer to the "
-            "master branch's default configs for the most recent task specific argument "
-            "structures." % task,
+            "Error: Attempting to load old task-specific args for task %s, please refer to the master branch's default configs for the most recent task specific argument structures."
+            % task,
         )
     for old_name, new_name in name_dict.items():
         assert_for_log(
             old_name not in args,
-            "Error: Attempting to load old arg name %s, please update to new name %s."
+            "Error: Attempting to load old arg name [%s], please update to new name [%s]"
             % (old_name, name_dict[old_name]),
         )
     old_input_module_vals = [
@@ -481,8 +466,7 @@ def check_arg_name(args):
     for input_type in old_input_module_vals:
         assert_for_log(
             input_type not in args,
-            "Error: Attempting to load old arg name %s, please use input_module config "
-            "parameter and refer to master branch's default configs for current way to specify %s."
+            "Error: Attempting to load old arg name [%s], please use input_module config parameter and refer to master branch's default configs for current way to specify [%s]"
             % (input_type, input_type),
         )
 
@@ -552,10 +536,14 @@ def main(cl_arguments):
     emb_file = os.path.join(args.exp_dir, "embs.pkl")
     word_embs = pkl.load(open(emb_file, "rb"))
     d_emb, word_embeddings, _ = build_embeddings(args, vocab, target_tasks, word_embs)
+    if "conditional" in pretrain_tasks[0].name:
+        encoder = PytorchSeq2SeqWrapper(torch.nn.LSTM(d_emb * 2, 200, 2, batch_first=True))
+        conditional=True
+    else:
+        encoder = PytorchSeq2SeqWrapper(torch.nn.LSTM(d_emb, 200, 2, batch_first=True))
+        conditional=False
     #model = LstmTagger(word_embeddings, encoder, vocab)
-    # this is the lM model 
-    model = build_model(args, vocab, word_embs, tasks)
-
+    model = CrfTagger(vocab, word_embeddings, encoder, "i2b2-2010-concepts_tags", label_encoding="BIO",conditional=conditional, calculate_span_f1=True) 
     log.info("Finished building model in %.3fs", time.time() - start_time)
 
     # Start Tensorboard if requested
@@ -596,8 +584,6 @@ def main(cl_arguments):
 
     if args.do_target_task_training:
         # Train on target tasks
-        # now, us the cRFTagger
-        
         pre_target_train_path = setup_target_task_training(args, target_tasks, model, strict)
         target_tasks_to_train = copy.deepcopy(target_tasks)
         # Check for previous target train checkpoints
@@ -613,7 +599,7 @@ def main(cl_arguments):
             # Skip tasks that should not be trained on.
             if task.eval_only_task:
                 continue
-            model = CrfTagger(vocab, word_embeddings, model.get_phrase_layer(), "i2b2-2010-concepts_tags", label_encoding="BIO", calculate_span_f1=True)
+
             params_to_train = load_model_for_target_train_run(
                 args, pre_target_train_path, model, strict, task
             )

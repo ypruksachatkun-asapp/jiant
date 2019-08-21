@@ -72,6 +72,7 @@ class CrfTagger(Model):
                  calculate_span_f1: bool = None,
                  dropout: Optional[float] = None,
                  verbose_metrics: bool = False,
+                 conditional: bool = False,
                  initializer: InitializerApplicator = InitializerApplicator(),
                  regularizer: Optional[RegularizerApplicator] = None) -> None:
         super().__init__(vocab, regularizer)
@@ -92,6 +93,7 @@ class CrfTagger(Model):
             output_dim = feedforward.get_output_dim()
         else:
             output_dim = self.encoder.get_output_dim()
+        self.section_layer = nn.LSTM(d_emb, d_emb, 2)
         self.tag_projection_layer = TimeDistributed(Linear(output_dim,
                                                            self.num_tags))
 
@@ -181,12 +183,20 @@ class CrfTagger(Model):
             A scalar loss to be optimised. Only computed if gold label ``tags`` are provided.
         """
         embedded_text_input = self.text_field_embedder(tokens["inputs"])
+        if self.conditional:
+            section_type = self.text_field_embedder(tokens["section"])
+            section_type = self.section_layer(section_type) # [batch_Size, seq_len, section_dim, word_dim] -> [batch_size, seq_len, word_dim]
+            section_type = section_type[0][:, -1, :]
+            section_type = section_type.unsqueeze(1)
+            section_type = section_type.expand(-1, len(embedded_text_input[0]), -1)
+            embedded_text_input = torch.cat((embedded_text_input, section_type), 2)
         mask = util.get_text_field_mask(tokens["inputs"])
 
         if self.dropout:
             embedded_text_input = self.dropout(embedded_text_input)
 
         encoded_text = self.encoder(embedded_text_input, mask)
+
         if self.dropout:
             encoded_text = self.dropout(encoded_text)
 
@@ -231,7 +241,7 @@ class CrfTagger(Model):
         ``output_dict["tags"]`` is a list of lists of tag_ids,
         so we use an ugly nested list comprehension.
         """
-        output_dict["preds"] = [
+        output_dict["tags"] = [
                 [self.vocab.get_token_from_index(tag, namespace=self.label_namespace)
                  for tag in instance_tags]
                 for instance_tags in output_dict["tags"]

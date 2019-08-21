@@ -7,6 +7,7 @@ from typing import Iterable, Sequence, Type
 from allennlp.data import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average
+<<<<<<< HEAD
 from allennlp.data.fields import (
     LabelField,
     ListField,
@@ -16,6 +17,10 @@ from allennlp.data.fields import (
     TextField,
 )
 from jiant.utils.data_loaders import process_sentence
+=======
+
+from jiant.utils.data_loaders import tokenize_and_truncate
+>>>>>>> be279c1222cf6f9cab5bd3b4743f3a93cd8731a0
 from jiant.tasks.registry import register_task
 from jiant.tasks.tasks import (
     UNK_TOK_ALLENNLP,
@@ -89,9 +94,9 @@ class LanguageModelingTask(SequenceGenerationTask):
                 toks = row.strip()
                 if not toks:
                     continue
-                yield process_sentence(self._tokenizer_name, toks, self.max_seq_len)
+                yield tokenize_and_truncate(self._tokenizer_name, toks, self.max_seq_len)
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_token_fn) -> Iterable[Type[Instance]]:
         """Process a language modeling split by indexing and creating fields.
         Args:
             split: (list) a single list of sentences
@@ -103,6 +108,7 @@ class LanguageModelingTask(SequenceGenerationTask):
             and bwd targs adds </s> as a target for input <s>
             to avoid issues with needing to strip extra tokens
             in the input for each direction """
+            sent_ = boundary_token_fn(sent_)  # Add <s> and </s>
             d = {
                 "input": sentence_to_text_field(sent_[:-1], indexers),
                 "targs": sentence_to_text_field(sent_[1:-2], indexers),

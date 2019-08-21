@@ -7,11 +7,15 @@ TOK = MosesTokenizer()
 fi = open(sys.argv[1], "r")
 fo = open(sys.argv[1] + ".moses", "w")
 
-for line in fi:
+def moses_tokenizer():
+    print('new one')
+ 
+def moses_tokenizer(tokenized_sents, concepts):
+
     parts = line.strip().split("\t")
-    old_toks = parts[0].split()
-    new_toks = TOK.tokenize(parts[0])
-    tags = parts[1].split()
+    old_toks = tokenized_sents
+    new_toks = TOK.tokenize(" ".join(parts[0]))
+    tags = concepts
 
     new_tags = []
     tag_counter = 0
@@ -40,8 +44,10 @@ for line in fi:
                 print(" ".join(old_toks))
                 print(" ".join(new_toks))
                 print(" ")
+
     if len(new_tags) != len(new_toks):
         print("MISMATCH!!!")
+
 
     fo.write(
         (" ".join(new_toks) + "\t" + " ".join(new_tags) + "\n")

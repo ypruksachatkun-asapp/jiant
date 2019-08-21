@@ -386,7 +386,7 @@ id2tag = { v:k for k,v in labels.items() }
 class Document:
 
     def __init__(self, txt, tokenizer_name, con=None):
-        # read data
+          # read data
         retVal = read_i2b2(txt, con, tokenizer_name)
         # Internal representation natural for i2b2 format
         self._tok_sents = retVal[0]
@@ -396,10 +396,13 @@ class Document:
             self._tok_concepts = retVal[1]
             self._labels = tok_concepts_to_labels(self._tok_sents,
                                                   self._tok_concepts, txt, con)
+        self.sections = self.get_sections(self._tok_sents)
         self._tok_sents = [item for sublist in self._tok_sents for item in sublist]
         self._labels = [item for sublist in self._labels for item in sublist]
+        self.sections = [item for sublist in self.sections for item in sublist]
         assert len(self._labels) == len(self._tok_sents)
-        self._tok_sents, self._labels = preprocess_tagging(self._tok_sents, self._labels, tokenizer_name)
+        _, self._labels = preprocess_tagging(self._tok_sents, self._labels, tokenizer_name)
+        self._tok_sents, self.sections = preprocess_tagging(self._tok_sents, self.sections,  tokenizer_name)
         # save filename
         self._filename = txt
 
@@ -407,6 +410,8 @@ class Document:
     def getName(self):
         return os.path.basename(self._filename).split('.')[0]
 
+    def getSections(self):
+        return self.sections
 
     def getExtension(self):
         return 'con'
@@ -419,6 +424,31 @@ class Document:
 
     def getTokenLabels(self):
         return self._labels
+
+    def get_sections(self, tokenized_sents):
+        # input: list[str]
+        # output: List(str) where str is section
+        result = []
+        sections = sections = ["FINAL DIAGNOSES", "CHIEF COMPLAINT", "DISCHARGE MEDICATIONS", "FOLLOW-UP PLANS", "RESULTS", "DISCHARGE STATUS", "PHYSICAL EXAM", "DISCHARGE INSTRUCTIONS", "Followup Instructions", "DISCHARGE CONDITION", "BRIEF SUMMARY OF HOSPITAL COURSE", "LABORATORY STUDIES", "PHYSICAL EXAM AT TIME OF ADMISSION", "SOCIAL HISTORY", "FAMILY HISTORY", "ALLERGIES", "MEDICATIONS ON ADMISSION", "PAST MEDICAL HISTORY", "HISTORY OF PRESENT ILLNESS"]
+        mappings = mappings = {"discharge diagnosis": "final diagnosis", "followup instructions": "discharge instructions", "follow-up plans": "discharge instructions", "discharge disposition":"dischargge status", "brief hospital course": "brief summary of hospital course", "pertinent results":"results"}
+
+        current_section = "discharge summary"
+        for chunk in tokenized_sents:
+                curr_result = []
+                chunk_str =  " ".join(chunk)
+                chunk_str = chunk_str.lower()
+                for section in sections + list(mappings.keys()):
+                    section = section.lower()
+                    if mappings.get(section) is not None and section in chunk_str:
+                        current_section = mappings[section]
+                    elif section in chunk_str:
+                        current_section = section
+                    if "completed by" in chunk_str or "dictated" in chunk_str:
+                        current_section = "discharge summary"
+                for i in range(len(chunk)):
+                    curr_result.append(current_section)
+                result.append(curr_result)
+        return result
 
 
     def conlist(self):
