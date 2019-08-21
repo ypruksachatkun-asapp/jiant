@@ -235,6 +235,7 @@ def _build_vocab(args, tasks, vocab_path: str):
         sections = ["FINAL DIAGNOSES", "CHIEF COMPLAINT", "DISCHARGE MEDICATIONS", "FOLLOW-UP PLANS", "RESULTS", "DISCHARGE STATUS", "PHYSICAL EXAM", "DISCHARGE INSTRUCTIONS", "Followup Instructions", "DISCHARGE CONDITION", "BRIEF SUMMARY OF HOSPITAL COURSE", "LABORATORY STUDIES", "PHYSICAL EXAM AT TIME OF ADMISSION", "SOCIAL HISTORY", "FAMILY HISTORY", "ALLERGIES", "MEDICATIONS ON ADMISSION", "PAST MEDICAL HISTORY", "HISTORY OF PRESENT ILLNESS"]
         sections = [x.lower() for x in sections]
         for section in sections:
+            vocab.add_token_to_namespace(section)
     vocab.save_to_files(vocab_path)
     log.info("\tSaved vocab to %s", vocab_path)
     #  del word2freq, char2freq, target2freq
