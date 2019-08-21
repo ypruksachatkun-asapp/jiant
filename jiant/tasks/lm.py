@@ -7,7 +7,6 @@ from typing import Iterable, Sequence, Type
 from allennlp.data import Instance
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.training.metrics import Average
-<<<<<<< HEAD
 from allennlp.data.fields import (
     LabelField,
     ListField,
@@ -17,10 +16,9 @@ from allennlp.data.fields import (
     TextField,
 )
 from jiant.utils.data_loaders import process_sentence
-=======
 
 from jiant.utils.data_loaders import tokenize_and_truncate
->>>>>>> be279c1222cf6f9cab5bd3b4743f3a93cd8731a0
+
 from jiant.tasks.registry import register_task
 from jiant.tasks.tasks import (
     UNK_TOK_ALLENNLP,

@@ -31,7 +31,6 @@ from jiant.CRFTagger import CrfTagger
 from jiant.preprocess import build_tasks
 from jiant import tasks as task_modules
 from jiant.trainer import build_trainer
-<<<<<<< HEAD
 from jiant.utils import config
 from jiant.models import build_embeddings
 from allennlp.modules.text_field_embedders import TextFieldEmbedder
@@ -50,9 +49,7 @@ from allennlp.data.tokenizers import Token
 from allennlp.data.vocabulary import Vocabulary
 from allennlp.models import Model
 from allennlp.modules.feedforward import FeedForward
-=======
 from jiant.utils import config, tokenizers
->>>>>>> be279c1222cf6f9cab5bd3b4743f3a93cd8731a0
 from jiant.utils.utils import (
     assert_for_log,
     load_model_state,

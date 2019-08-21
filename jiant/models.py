@@ -237,15 +237,12 @@ def build_model(args, vocab, pretrained_embs, tasks):
         # Here, this uses openAIEmbedder.
         embedder = OpenAIEmbedderModule(args)
         d_emb = embedder.get_output_dim()
-<<<<<<< HEAD
     elif args.input_module.startswith("bert") or args.input_module == "bio-bert":
         # Note: incompatible with other embedders, but logic in preprocess.py
         # should prevent these from being enabled anyway.
         from .bert.utils import BertEmbedderModule
-=======
     elif args.input_module.startswith("bert"):
         from jiant.pytorch_transformers_interface.modules import BertEmbedderModule
->>>>>>> be279c1222cf6f9cab5bd3b4743f3a93cd8731a0
 
         log.info(f"Using BERT model ({args.input_module}).")
         embedder = BertEmbedderModule(args)
@@ -322,12 +319,8 @@ def build_embeddings(args, vocab, tasks, pretrained_embs=None):
             "gpt",
             "elmo",
             "elmo-chars-only",
-<<<<<<< HEAD
             "bio-bert"
         ], "You do not have a valid value for input_module."
-=======
-        ], f"'{args.input_module}' is not a valid value for input_module."
->>>>>>> be279c1222cf6f9cab5bd3b4743f3a93cd8731a0
         embeddings = None
         word_embs = None
 
@@ -773,16 +766,11 @@ class MultiTaskModel(nn.Module):
         self.sent_encoder = sent_encoder
         self.vocab = vocab
         self.utilization = Average() if args.track_batch_utilization else None
-<<<<<<< HEAD
-        self.elmo = args.input_module == "elmo" 
-        self.use_bert = bool(args.input_module.startswith("bert")) or bool(args.input_module == "bio-bert")
-=======
         self.elmo = args.input_module == "elmo"
         self.use_pytorch_transformers = input_module_uses_pytorch_transformers(args.input_module)
         self.project_before_pooling = not (
             self.use_pytorch_transformers and args.transfer_paradigm == "finetune"
         )  # Rough heuristic. TODO: Make this directly user-controllable.
->>>>>>> be279c1222cf6f9cab5bd3b4743f3a93cd8731a0
         self.sep_embs_for_skip = args.sep_embs_for_skip
 
     def forward(self, task, batch, predict=False):

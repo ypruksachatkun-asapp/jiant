@@ -94,7 +94,6 @@ class SentenceEncoder(Model):
         # General sentence embeddings (for sentence encoder).
         # Skip this for probing runs that don't need it.
         if not isinstance(self._phrase_layer, NullPhraseLayer):
-<<<<<<< HEAD
             if isinstance(self._text_field_embedder, BertEmbedderModule):
                 word_embs_in_context = self._text_field_embedder(sent, is_pair_task=is_pair_task)
                 if self.append_to_input:
@@ -112,9 +111,6 @@ class SentenceEncoder(Model):
             #  expand
             # then concatenate
             word_embs_in_context = self._highway_layer(word_embs_in_context)
-=======
-            word_embs_in_context = self._highway_layer(self._text_field_embedder(sent))
->>>>>>> be279c1222cf6f9cab5bd3b4743f3a93cd8731a0
         else:
             word_embs_in_context = None
 
