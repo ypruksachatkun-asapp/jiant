@@ -543,9 +543,8 @@ def main(cl_arguments):
         encoder = PytorchSeq2SeqWrapper(torch.nn.LSTM(d_emb, 200, 2, batch_first=True))
         conditional=False
     #model = LstmTagger(word_embeddings, encoder, vocab)
-    model = CrfTagger(vocab, word_embeddings, encoder, "i2b2-2010-concepts_tags", label_encoding="BIO",conditional=conditional, calculate_span_f1=True) 
+    model = CrfTagger(vocab, word_embeddings, encoder, pretrain_tasks[0]._label_namespace, label_encoding="BIO",conditional=conditional, calculate_span_f1=True) 
     log.info("Finished building model in %.3fs", time.time() - start_time)
-
     # Start Tensorboard if requested
     if cl_args.tensorboard:
         tb_logdir = os.path.join(args.run_dir, "tensorboard")
@@ -605,13 +604,12 @@ def main(cl_arguments):
             )
             trainer, _, opt_params, schd_params = build_trainer(
                 args,
-                [task.name],
-                model,
+                [task.name for task in pretrain_tasks],
+                model, 
                 args.run_dir,
                 task.val_metric_decreases,
                 phase="target_train",
             )
-
             _ = trainer.train(
                 tasks=[task],
                 stop_metric=task.val_metric,

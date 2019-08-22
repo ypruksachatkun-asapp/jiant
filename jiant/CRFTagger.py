@@ -2,6 +2,7 @@ from typing import Dict, Optional, List, Any
 
 from overrides import overrides
 import torch
+from torch import nn
 from torch.nn.modules.linear import Linear
 
 from allennlp.common.checks import check_dimensions_match, ConfigurationError
@@ -83,6 +84,8 @@ class CrfTagger(Model):
         self.encoder = encoder
         self._verbose_metrics = verbose_metrics
         self.utilization = None
+        self.conditional=conditional
+        d_emb = text_field_embedder.get_output_dim()
         if dropout:
             self.dropout = torch.nn.Dropout(dropout)
         else:
@@ -93,7 +96,8 @@ class CrfTagger(Model):
             output_dim = feedforward.get_output_dim()
         else:
             output_dim = self.encoder.get_output_dim()
-        self.section_layer = nn.LSTM(d_emb, d_emb, 2)
+        if conditional:
+            self.section_layer = nn.LSTM(d_emb, d_emb, 2)
         self.tag_projection_layer = TimeDistributed(Linear(output_dim,
                                                            self.num_tags))
 
@@ -126,6 +130,7 @@ class CrfTagger(Model):
                 "accuracy3": CategoricalAccuracy(top_k=3)
         }
         self.calculate_span_f1 = calculate_span_f1
+        import pdb; pdb.set_trace()
         if calculate_span_f1:
             if not label_encoding:
                 raise ConfigurationError("calculate_span_f1 is True, but "
@@ -231,7 +236,7 @@ class CrfTagger(Model):
             output["words"] = [x["words"] for x in metadata]
         output["n_exs"] = len(tokens["inputs"][list(tokens["inputs"].keys())[0]])
         if predict:
-            output = self.decode(output)
+            output["preds"] = self.decode(output)
         return output
 
     @overrides
@@ -253,7 +258,7 @@ class CrfTagger(Model):
     def get_metrics(self, reset: bool = False) -> Dict[str, float]:
         metrics_to_return = {metric_name: metric.get_metric(reset) for
                              metric_name, metric in self.metrics.items()}
-
+        import pdb; pdb.set_trace()
         if self.calculate_span_f1:
             f1_dict = self._f1_metric.get_metric(reset=reset)
             print(f1_dict)

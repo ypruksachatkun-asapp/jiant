@@ -401,8 +401,8 @@ class Document:
         self._labels = [item for sublist in self._labels for item in sublist]
         self.sections = [item for sublist in self.sections for item in sublist]
         assert len(self._labels) == len(self._tok_sents)
-        _, self._labels = preprocess_tagging(self._tok_sents, self._labels, tokenizer_name)
-        self._tok_sents, self.sections = preprocess_tagging(self._tok_sents, self.sections,  tokenizer_name)
+        #_, self._labels = preprocess_tagging(self._tok_sents, self._labels, tokenizer_name)
+        #self._tok_sents, self.sections = preprocess_tagging(self._tok_sents, self.sections,  tokenizer_name)
         # save filename
         self._filename = txt
 
@@ -410,7 +410,7 @@ class Document:
     def getName(self):
         return os.path.basename(self._filename).split('.')[0]
 
-    def getSections(self):
+    def getSection(self):
         return self.sections
 
     def getExtension(self):
@@ -424,7 +424,7 @@ class Document:
 
     def getTokenLabels(self):
         return self._labels
-
+ 
     def get_sections(self, tokenized_sents):
         # input: list[str]
         # output: List(str) where str is section

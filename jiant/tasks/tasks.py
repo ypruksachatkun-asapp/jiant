@@ -2146,7 +2146,7 @@ class i2b22010ConceptsTask(TaggingTask):
             st = self.get_split_text(split)
             self.example_counts[split] = len(st)
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_fn=None) -> Iterable[Type[Instance]]:
         """ Process a tagging task """
         inputs = [TextField(list(map(Token, sent[0])), token_indexers=indexers) for sent in split]
         targs = []
@@ -2256,8 +2256,9 @@ class i2b2ConditionalTask(i2b22010ConceptsTask):
             self.test_data_text.append([doc_tmp.getTokenizedSentences(), doc_tmp.getTokenLabels(), doc_tmp.getSection()])
         self.sentences =  [x[0] for x in self.train_data_text] + [x[0] for x in self.val_data_text[0]]
 
-    def process_split(self, split, indexers) -> Iterable[Type[Instance]]:
+    def process_split(self, split, indexers, boundary_fn_token) -> Iterable[Type[Instance]]:
         """ Process a tagging task """
+        split =  [[boundary_fn_token(sent[0]), ['O'] + sent[1] + ['O'], sent[2]] for sent in split]
         inputs = [TextField(list(map(Token, sent[0])), token_indexers=indexers) for sent in split]
         targs = []
         for sent in split:
@@ -2265,7 +2266,6 @@ class i2b2ConditionalTask(i2b22010ConceptsTask):
                 import pdb; pdb.set_trace()
             else:
                 targs.append(SequenceLabelField(labels = sent[1], sequence_field=TextField(list(map(Token, sent[0])), token_indexers=indexers), label_namespace=self._label_namespace))
-
         input_str = [MetadataField(" ".join(sent[0])) for sent in split]
         targ_str = [MetadataField(" ".join(sent[1])) for sent in split]
         section_str = [MetadataField(" ".join(sent[2])) for sent in split]
