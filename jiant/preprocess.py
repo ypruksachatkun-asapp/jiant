@@ -615,6 +615,7 @@ def add_pytorch_transformers_vocab(vocab, tokenizer_name):
     if tokenizer_name != "scispacy":
         vocab_size= len(tokenizer)
         ordered_vocab = tokenizer.convert_ids_to_tokens(range(vocab_size))
+
     log.info("Added pytorch_transformers vocab (%s): %d tokens", tokenizer_name, len(ordered_vocab))
     for word in ordered_vocab:
         vocab.add_token_to_namespace(word, input_module_tokenizer_name(tokenizer_name))

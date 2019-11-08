@@ -34,7 +34,7 @@ SOS_TOK, EOS_TOK = "<SOS>", "<EOS>"
 _MOSES_DETOKENIZER = MosesDetokenizer()
 
 
-def get_output_attribute(out, attribute_name, use_cuda):
+def get_output_attribute(out, attribute_name, cuda_device):
     """
     This function handles processing/reduction of output for both 
     DataParallel or non-DataParallel situations. 
@@ -46,15 +46,16 @@ def get_output_attribute(out, attribute_name, use_cuda):
     ---------------------
     out: Dictionary, output of model during forward pass, 
     attribute_name: str, 
-    use_cuda: bool
+
+    cuda_device: list or int
     """
-    if torch.cuda.device_count() > 1:
+    if isinstance(cuda_device, list):
         return out[attribute_name].sum()
     else:
         return out[attribute_name]
 
 
-def get_model_attribute(model, attribute_name, use_cuda):
+def get_model_attribute(model, attribute_name, cuda_device):
     """
         Getter function for both CPU and GPU. 
 
@@ -68,7 +69,7 @@ def get_model_attribute(model, attribute_name, use_cuda):
         The attribute object from the model. 
     """
     # maybe we should do (int, list)
-    if torch.cuda.device_count() > 1:
+    if isinstance(cuda_device, list):
         return getattr(model.module, attribute_name)
     else:
         return getattr(model, attribute_name)
@@ -338,7 +339,7 @@ def load_model_state(model, state_path, gpu_id, skip_task_models=[], strict=True
     strict: Whether we should fail if any parameters aren't found in the checkpoint. If false,
         there is a risk of leaving some parameters in their randomly initialized state.
     """
-    model_state = torch.load(state_path, map_location=device_mapping(gpu_id))
+    model_state = torch.load(state_path)
 
     assert_for_log(
         not (skip_task_models and strict),
@@ -410,7 +411,7 @@ def format_output(obj, cuda_devices):
     such as loss and n_exs.
     """
     if isinstance(cuda_devices, list):
-        if isinstance(obj, torch.Tensor) is False:
+        if not isinstance(obj, torch.Tensor):
             obj = torch.tensor(obj).cuda()
         return obj.unsqueeze(0)
     else:
@@ -418,12 +419,7 @@ def format_output(obj, cuda_devices):
 
 
 def uses_cuda(cuda_devices):
-    use_cuda = 1
-    if isinstance(cuda_devices, list):
-        return use_cuda
-    if isinstance(cuda_devices, int) and cuda_devices >= 0:
-        return use_cuda
-    return 0
+    return isinstance(cuda_devices, list) or (isinstance(cuda_devices, int) and cuda_devices >= 0)
 
 
 def get_batch_size(batch, cuda_devices, keyword="input"):

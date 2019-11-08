@@ -308,6 +308,8 @@ def get_best_checkpoint_path(args, phase, task_name=None):
 
 def evaluate_and_write(args, model, tasks, splits_to_write, cuda_device):
     """ Evaluate a model on dev and/or test, then write predictions """
+
+    val_results, val_preds = evaluate.evaluate(model, tasks, args.batch_size, cuda_device, "val")
     if "val" in splits_to_write:
         evaluate.write_preds(
             tasks, val_preds, args.run_dir, "val", strict_glue_format=args.write_strict_glue_format
@@ -490,7 +492,7 @@ def load_model_for_target_train_run(args, ckpt_path, model, strict, task, cuda_d
         )
         # Only train task-specific module
 
-        pred_module = get_model_attribute(model, "%s_mdl" % task.name, uses_cuda(cuda_devices))
+        pred_module = get_model_attribute(model, "%s_mdl" % task.name, cuda_devices)
         to_train = [(n, p) for n, p in pred_module.named_parameters() if p.requires_grad]
         to_train += elmo_scalars
     model = model.cuda() if uses_cuda(cuda_devices) else model
@@ -509,6 +511,7 @@ def main(cl_arguments):
     # Load tasks
     log.info("Loading tasks...")
     start_time = time.time()
+    cuda_device = parse_cuda_list_arg(args.cuda)
     pretrain_tasks, target_tasks, vocab, word_embs = build_tasks(args)
     cuda_device = parse_cuda_list_arg(args.cuda)
     tasks = sorted(set(pretrain_tasks + target_tasks), key=lambda x: x.name)
@@ -518,12 +521,8 @@ def main(cl_arguments):
     # Build model
     log.info("Building model...")
     start_time = time.time()
-    args.sep_id = vocab.get_token_index("[SEP]", input_module_tokenizer_name(args.tokenizer))
-    args.cls_id = vocab.get_token_index("[CLS]", input_module_tokenizer_name(args.tokenizer))
-    args.unk_id = vocab.get_token_index("[UNK]", input_module_tokenizer_name(args.tokenizer))
-    args.pad_id = vocab.get_token_index("[PAD]", input_module_tokenizer_name(args.tokenizer))
+
     model = build_model(args, vocab, word_embs, tasks, cuda_device)
-    model.sent_encoder._text_field_embedder.model.resize_token_embeddings(len(vocab.get_index_to_token_vocabulary(input_module_tokenizer_name(args.tokenizer))) + model.sent_encoder._text_field_embedder.model.embeddings.word_embeddings.num_embeddings) 
     log.info("Finished building model in %.3fs", time.time() - start_time)
 
     # Start Tensorboard if requested
@@ -613,12 +612,13 @@ def main(cl_arguments):
         # Evaluate on target_tasks.
         for task in target_tasks:
             # Find the task-specific best checkpoint to evaluate on.
-            task_params = get_model_attribute(model, "_get_task_params", uses_cuda(cuda_device))
+
+            task_params = get_model_attribute(model, "_get_task_params", cuda_device)
             task_to_use = task_params(task.name).get("use_classifier", task.name)
             ckpt_path = get_best_checkpoint_path(args, "eval", task_to_use)
             assert ckpt_path is not None
             load_model_state(model, ckpt_path, cuda_device, skip_task_models=[], strict=strict)
-            evaluate_and_write(args, model, [task], "test", cuda_device)
+            evaluate_and_write(args, model, [task], splits_to_write, cuda_device)
 
     if args.delete_checkpoints_when_done and not args.keep_all_checkpoints:
         log.info("Deleting all checkpoints.")
